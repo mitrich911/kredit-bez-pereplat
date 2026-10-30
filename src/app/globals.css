@@ -1,0 +1,73 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+:root {
+  --bg: #f6f7f4;
+  --surface: #ffffff;
+  --surface-2: #eef1ec;
+  --text: #16201a;
+  --muted: #5b6760;
+  --border: #dde3dc;
+  --accent: #0f7a4f;
+  --accent-ink: #ffffff;
+  --accent-soft: #e2f3ea;
+  --loss: #b4442b;
+  --loss-soft: #fbe9e3;
+  --warn: #8a5a00;
+  --warn-soft: #fdf1d8;
+  --chart-1: #0f7a4f;
+  --chart-2: #d0603f;
+  --chart-3: #3f6fd0;
+  --chart-4: #b08a1c;
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --bg: #0e1411;
+  --surface: #151d18;
+  --surface-2: #1c2620;
+  --text: #e7ede9;
+  --muted: #9aa8a0;
+  --border: #2a362f;
+  --accent: #3ccf8e;
+  --accent-ink: #062014;
+  --accent-soft: #143325;
+  --loss: #ff8a6b;
+  --loss-soft: #3a1d15;
+  --warn: #f2c25a;
+  --warn-soft: #362a10;
+  --chart-1: #3ccf8e;
+  --chart-2: #ff8a6b;
+  --chart-3: #7aa2ff;
+  --chart-4: #e3c14f;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-soft: var(--accent-soft);
+  --color-loss: var(--loss);
+  --color-loss-soft: var(--loss-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}

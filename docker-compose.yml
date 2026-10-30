@@ -1,0 +1,20 @@
+# Отдельный сервис, не трогает другие контейнеры на VPS.
+# Слушает только localhost: наружу публикуется через reverse proxy после согласования домена.
+services:
+  kredit:
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_SITE_URL: ${SITE_URL:-http://localhost:3210}
+        NEXT_PUBLIC_INDEXING: ${INDEXING:-off}
+        NEXT_PUBLIC_PARTNERS: ${PARTNERS:-off}
+    image: kredit-bez-pereplat:latest
+    container_name: kredit-bez-pereplat
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3210:3000"
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /app/.next/cache
+    mem_limit: 384m
