@@ -1,4 +1,4 @@
-:HL["/kredit-bez-pereplat/_next/static/chunks/0slg6tgv333hi.css","style"]
+:HL["/kredit-bez-pereplat/_next/static/chunks/29en4p6zp4q85.css","style"]
 2:[["children",{"s":"__PAGE__","h":160}]]
 1:[["children",{"s":"/_not-found","h":64,"c":"$Q2"}]]
-0:{"b":"uUSxX7woBzkoEcIXA8Qu8","t":{"t":{"s":"","h":16,"c":"$Q1"}}}
+0:{"b":"f1gEe8TtoZyRfl4Pgx_PS","t":{"t":{"s":"","h":16,"c":"$Q1"}}}
