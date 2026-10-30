@@ -6,15 +6,17 @@ import { analyzeRefinance, type RefinanceInput } from "@/lib/finance/refinance";
 import { formatMonths } from "@/lib/finance/advisor";
 import { rub } from "@/lib/format";
 import { Card, DemoNote, NumberField, Stat } from "./ui";
+import { useBrowserStartDate } from "@/lib/use-browser-start-date";
 
 export function Refinance({ startDate }: { startDate: string }) {
+  const currentStartDate = useBrowserStartDate(startDate);
   const [v, setV] = useState<RefinanceInput>({
     balance: 4_000_000, currentRate: 19, remainingMonths: 180, currentInsurancePercent: 0.6,
     newRate: 15.5, newTermMonths: 180, newInsurancePercent: 0.6, switchCosts: 40_000,
     paymentType: "annuity", startDate,
   });
   const set = (patch: Partial<RefinanceInput>) => setV({ ...v, ...patch });
-  const deferred = useDeferredValue(v);
+  const deferred = useDeferredValue({ ...v, startDate: currentStartDate });
   const r = useMemo(() => (deferred.balance > 0 && deferred.remainingMonths > 0 && deferred.newTermMonths > 0 ? analyzeRefinance(deferred) : null), [deferred]);
   const worth = r && r.saved.greaterThan(0);
 

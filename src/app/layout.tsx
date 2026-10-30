@@ -25,7 +25,7 @@ export const viewport: Viewport = {
 };
 
 // Тему ставим до первой отрисовки, чтобы не было вспышки светлого фона.
-const themeScript = `try{var t=localStorage.getItem("theme");if(t!=="light"&&t!=="dark"){t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}document.documentElement.dataset.theme=t}catch(e){}`;
+const themeScript = `var m="system";try{var s=localStorage.getItem("theme");if(s==="light"||s==="dark")m=s}catch(e){}var q=matchMedia("(prefers-color-scheme: dark)");document.documentElement.dataset.themeMode=m;document.documentElement.dataset.theme=m==="system"?(q.matches?"dark":"light"):m;q.addEventListener("change",function(){if(document.documentElement.dataset.themeMode==="system")document.documentElement.dataset.theme=q.matches?"dark":"light"})`;
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
