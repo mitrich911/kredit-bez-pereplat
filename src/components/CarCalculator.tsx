@@ -8,6 +8,7 @@ import { Card, DemoNote, Details, NumberField, Stat, Toggle } from "./ui";
 import { CostBar } from "./charts";
 import { BankRateHint } from "./BankMarket";
 import { DEALER_SERVICES, VERDICT_LABEL } from "@/data/dealer-services";
+import { useBrowserStartDate } from "@/lib/use-browser-start-date";
 
 const NEW_CAR: CarProfile = {
   name: "Новый", price: 2_500_000, depreciationFirstYear: 15, depreciationNextYears: 10,
@@ -55,6 +56,7 @@ function Breakdown({ r }: { r: CarResult }) {
 }
 
 export function CarCalculator({ startDate }: { startDate: string }) {
+  const currentStartDate = useBrowserStartDate(startDate);
   const [car, setCar] = useState(NEW_CAR);
   const [alt, setAlt] = useState(USED_CAR);
   const [baseFin, setFin] = useState<CarFinancing>({ kind: "credit", downPayment: 500_000, annualRate: 18, termMonths: 60, dealerExtras: 0, extrasFinanced: true, loanFees: 0 });
@@ -71,7 +73,7 @@ export function CarCalculator({ startDate }: { startDate: string }) {
   const d = useDeferredValue({ car, alt, fin, years, yieldPct, inflation, services });
   const res = useMemo(() => {
     if (d.years <= 0 || d.car.price <= 0) return null;
-    const opt = { ownershipYears: d.years, savingsYield: d.yieldPct, costInflation: d.inflation, startDate };
+    const opt = { ownershipYears: d.years, savingsYield: d.yieldPct, costInflation: d.inflation, startDate: currentStartDate };
     const down = Math.min(d.fin.downPayment, d.car.price);
     const credit = carCostOfOwnership(d.car, { ...d.fin, kind: "credit", downPayment: down }, opt);
     // Цена каждой услуги с учётом процентов: насколько дешевле владение без неё
@@ -87,7 +89,7 @@ export function CarCalculator({ startDate }: { startDate: string }) {
     const altCredit = d.alt.price > 0 ? carCostOfOwnership(d.alt, { ...d.fin, kind: "credit", downPayment: altDown }, opt) : null;
     const terms = [24, 36, 60, 84].map((t) => ({ t, r: carCostOfOwnership(d.car, { ...d.fin, kind: "credit", downPayment: down, termMonths: t }, opt) }));
     return { credit, noExtras, cash, altCredit, terms, serviceCost };
-  }, [d, startDate]);
+  }, [d, currentStartDate]);
 
   return (
     <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">

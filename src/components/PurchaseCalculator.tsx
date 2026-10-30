@@ -8,12 +8,14 @@ import { formatRuDate } from "@/lib/finance/dates";
 import { WB_CASH_NOTE } from "@/data/bank-offers";
 import { rub, pct } from "@/lib/format";
 import { Card, DemoNote, Details, NumberField } from "./ui";
+import { useBrowserStartDate } from "@/lib/use-browser-start-date";
 
 type Credit = NonNullable<PurchaseInput["credit"]>;
 type Inst = NonNullable<PurchaseInput["installment"]>;
 type Saving = NonNullable<PurchaseInput["saving"]>;
 
 export function PurchaseCalculator({ startDate }: { startDate: string }) {
+  const currentStartDate = useBrowserStartDate(startDate);
   const [price, setPrice] = useState(150_000);
   const [yieldPct, setYield] = useState(12);
   const [inflation, setInflation] = useState(7);
@@ -23,8 +25,8 @@ export function PurchaseCalculator({ startDate }: { startDate: string }) {
 
   const d = useDeferredValue({ price, yieldPct, inflation, credit, inst, saving });
   const options = useMemo(
-    () => (d.price > 0 ? comparePurchase({ cashPrice: d.price, savingsYield: d.yieldPct, priceInflation: d.inflation, startDate, credit: d.credit.termMonths > 0 ? d.credit : undefined, installment: d.inst.termMonths > 0 ? d.inst : undefined, saving: d.saving }) : []),
-    [d, startDate],
+    () => (d.price > 0 ? comparePurchase({ cashPrice: d.price, savingsYield: d.yieldPct, priceInflation: d.inflation, startDate: currentStartDate, credit: d.credit.termMonths > 0 ? d.credit : undefined, installment: d.inst.termMonths > 0 ? d.inst : undefined, saving: d.saving }) : []),
+    [d, currentStartDate],
   );
   const cheapest = options.length ? options.reduce((a, o) => (o.presentValue.lessThan(a.presentValue) ? o : a)) : null;
 

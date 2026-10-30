@@ -7,6 +7,9 @@ import { rub, pct } from "@/lib/format";
 import { Card, DemoNote, NumberField, Segmented, Toggle } from "./ui";
 import { BANK_OFFERS, PRODUCTS, type BankOffer } from "@/data/bank-offers";
 import { BankDataNote, BankMarket, SourceLine } from "./BankMarket";
+import { useBrowserStartDate } from "@/lib/use-browser-start-date";
+import { useBrowserToday } from "@/lib/use-browser-start-date";
+import { isBankOfferCurrent } from "@/lib/bank-freshness";
 
 const pickable = BANK_OFFERS.filter((o) => o.rateMin !== null);
 
@@ -28,6 +31,8 @@ const blank = (name: string, patch: Partial<Offer> = {}): Offer => ({
 });
 
 export function CompareOffers({ startDate }: { startDate: string }) {
+  const currentStartDate = useBrowserStartDate(startDate);
+  const today = useBrowserToday();
   const [offers, setOffers] = useState<Offer[]>([
     blank("Банк А", { annualRate: 17.5, insurancePercent: 0.8 }),
     blank("Банк Б", { annualRate: 16.9, extraServices: 120_000, extraServicesFinanced: true, insurancePercent: 1 }),
@@ -35,17 +40,17 @@ export function CompareOffers({ startDate }: { startDate: string }) {
   const deferred = useDeferredValue(offers);
   const cmp = useMemo(() => {
     try {
-      return compareOffers(deferred.filter((o) => o.amount > 0 && o.termMonths > 0), startDate);
+      return compareOffers(deferred.filter((o) => o.amount > 0 && o.termMonths > 0), currentStartDate);
     } catch {
       return null;
     }
-  }, [deferred, startDate]);
+  }, [deferred, currentStartDate]);
   const update = (i: number, patch: Partial<Offer>) => setOffers(offers.map((o, k) => (k === i ? { ...o, ...patch } : o)));
 
   return (
     <div className="space-y-6">
       <BankMarket
-        startDate={startDate}
+        startDate={currentStartDate}
         onAdd={(bank, amount, termMonths) => {
           const base = blank("", { amount, termMonths });
           setOffers((prev) => [...prev.slice(prev.length >= 6 ? 1 : 0), { ...base, ...fromBank(bank, base) }]);
@@ -62,7 +67,7 @@ export function CompareOffers({ startDate }: { startDate: string }) {
               <select
                 value={o.sourceId ?? ""}
                 onChange={(e) => {
-                  const b = pickable.find((x) => x.id === e.target.value);
+                  const b = pickable.find((x) => x.id === e.target.value && (today === null || isBankOfferCurrent(x.checkedAt, today)));
                   update(i, b ? fromBank(b, o) : { sourceId: undefined });
                 }}
                 className="w-full min-w-0 rounded-xl border border-border bg-surface px-3 py-2.5 font-normal outline-none focus:border-accent"
@@ -70,7 +75,7 @@ export function CompareOffers({ startDate }: { startDate: string }) {
                 <option value="">Ввести условия вручную</option>
                 {PRODUCTS.map((p) => (
                   <optgroup key={p.id} label={p.title}>
-                    {pickable.filter((b) => b.product === p.id).map((b) => (
+                    {pickable.filter((b) => b.product === p.id && (today === null || isBankOfferCurrent(b.checkedAt, today))).map((b) => (
                       <option key={b.id} value={b.id}>{b.bank} — {b.title} (от {b.rateMin}%)</option>
                     ))}
                   </optgroup>

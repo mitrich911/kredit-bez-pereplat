@@ -2,6 +2,8 @@
 
 import { useSyncExternalStore } from "react";
 
+type ThemeMode = "system" | "light" | "dark";
+
 const listeners = new Set<() => void>();
 
 function subscribe(cb: () => void) {
@@ -9,30 +11,36 @@ function subscribe(cb: () => void) {
   return () => listeners.delete(cb);
 }
 
-const getTheme = () => (document.documentElement.dataset.theme === "dark" ? "dark" : "light");
+function getMode(): ThemeMode {
+  const mode = document.documentElement.dataset.themeMode;
+  return mode === "light" || mode === "dark" ? mode : "system";
+}
 
 export function ThemeToggle() {
-  // На сервере тема неизвестна — кнопка рисуется нейтрально, затем уточняется.
-  const theme = useSyncExternalStore(subscribe, getTheme, () => null);
-  const next = theme === "dark" ? "light" : "dark";
+  const mode = useSyncExternalStore(subscribe, getMode, () => "system" as ThemeMode);
 
-  function toggle() {
-    document.documentElement.dataset.theme = next;
+  function select(next: ThemeMode) {
+    document.documentElement.dataset.themeMode = next;
+    document.documentElement.dataset.theme = next === "system"
+      ? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
+      : next;
     try {
-      localStorage.setItem("theme", next);
+      if (next === "system") localStorage.removeItem("theme");
+      else localStorage.setItem("theme", next);
     } catch {}
-    listeners.forEach((l) => l());
+    listeners.forEach((listener) => listener());
   }
 
   return (
-    <button
-      type="button"
-      onClick={toggle}
-      className="grid size-10 place-items-center rounded-lg border border-border bg-surface text-lg"
-      aria-label={theme === "dark" ? "Включить светлую тему" : "Включить тёмную тему"}
-      title="Сменить тему"
+    <select
+      aria-label="Цветовая схема"
+      value={mode}
+      onChange={(event) => select(event.target.value as ThemeMode)}
+      className="max-w-28 rounded-lg border border-border bg-surface px-2 py-2.5 text-sm text-text sm:max-w-none"
     >
-      <span aria-hidden>{theme === "dark" ? "☀" : theme === "light" ? "☾" : "◐"}</span>
-    </button>
+      <option value="system">Как в системе</option>
+      <option value="light">Светлая</option>
+      <option value="dark">Тёмная</option>
+    </select>
   );
 }

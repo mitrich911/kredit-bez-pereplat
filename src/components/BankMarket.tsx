@@ -7,6 +7,8 @@ import { annuityPayment } from "@/lib/finance/loan";
 import { formatRuDate } from "@/lib/finance/dates";
 import { rub } from "@/lib/format";
 import { Card, NumberField, Segmented } from "./ui";
+import { isBankOfferCurrent } from "@/lib/bank-freshness";
+import { useBrowserToday } from "@/lib/use-browser-start-date";
 
 const pctRange = (a: number | null, b: number | null) =>
   a === null && b === null ? "не опубликована" : b === null ? `от ${a!.toLocaleString("ru-RU")}%` : `${a!.toLocaleString("ru-RU")}–${b.toLocaleString("ru-RU")}%`;
@@ -23,9 +25,12 @@ export function BankDataNote({ date = latestCheck }: { date?: string }) {
 }
 
 export function SourceLine({ offer }: { offer: BankOffer }) {
+  const today = useBrowserToday();
+  const outdated = today !== null && !isBankOfferCurrent(offer.checkedAt, today);
   return (
     <p className="text-xs text-muted">
       Источник: <a href={offer.sourceUrl} target="_blank" rel="noopener noreferrer nofollow" className="underline hover:text-text">{offer.sourceName ?? "сайт банка"}</a>, проверено {formatRuDate(offer.checkedAt)}
+      {outdated && <span className="font-semibold text-warn"> · Данные устарели: проверьте условия в банке</span>}
     </p>
   );
 }
@@ -35,6 +40,7 @@ export function SourceLine({ offer }: { offer: BankOffer }) {
  * из калькулятора — сравнение на месте, без отдельной страницы.
  */
 export function BankRateHint({ products, onPick, amount, termMonths }: { products: Product[]; onPick: (rate: number) => void; amount: number; termMonths: number }) {
+  const today = useBrowserToday();
   // Сначала банки с опубликованной ставкой (по возрастанию), затем те, у кого есть только ПСК или ничего
   const list = BANK_OFFERS.filter((o) => products.includes(o.product)).sort(
     (a, b) => (a.rateMin ?? 999) - (b.rateMin ?? 999) || (a.pskMin ?? 999) - (b.pskMin ?? 999),
@@ -59,7 +65,7 @@ export function BankRateHint({ products, onPick, amount, termMonths }: { product
                 </span>
               )}
             </span>
-            {o.rateMin !== null ? (
+            {o.rateMin !== null && (today === null || isBankOfferCurrent(o.checkedAt, today)) ? (
               <button type="button" onClick={() => onPick(o.rateMin!)} className="shrink-0 rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium hover:border-accent">
                 {o.rateMin.toLocaleString("ru-RU")}%
               </button>
@@ -68,7 +74,7 @@ export function BankRateHint({ products, onPick, amount, termMonths }: { product
             )}
           </div>
         ))}
-        <p className="text-xs text-muted">Кнопка подставит минимальную опубликованную ставку — ваша может оказаться выше. Если банк не пишет ставку на странице продукта, она есть только в его калькуляторе после ввода ваших данных.</p>
+        <p className="text-xs text-muted">Кнопка подставит минимальную опубликованную ставку — ваша может оказаться выше. Для данных старше 30 дней подстановка отключена. Если банк не пишет ставку на странице продукта, она есть только в его калькуляторе после ввода ваших данных.</p>
         <BankDataNote />
       </div>
     </details>
@@ -76,11 +82,12 @@ export function BankRateHint({ products, onPick, amount, termMonths }: { product
 }
 
 export function BankMarket({ startDate, onAdd }: { startDate: string; onAdd: (offer: BankOffer, amount: number, termMonths: number) => void }) {
+  const today = useBrowserToday();
   const [product, setProduct] = useState<Product>("cash");
   const [amount, setAmount] = useState(1_000_000);
   const [termMonths, setTerm] = useState(36);
   const ranked = useMemo(() => rankOffers(BANK_OFFERS, product, amount, termMonths, startDate), [product, amount, termMonths, startDate]);
-  const first = ranked.find((r) => r.limits.length === 0 && r.best);
+  const first = ranked.find((r) => r.limits.length === 0 && r.best && (today === null || isBankOfferCurrent(r.offer.checkedAt, today)));
 
   return (
     <Card>
@@ -98,6 +105,11 @@ export function BankMarket({ startDate, onAdd }: { startDate: string; onAdd: (of
           По опубликованным данным ниже всего полная стоимость у <b className="text-accent">{first.offer.bank}</b> ({first.offer.title.toLowerCase()}): ПСК {pctRange(first.offer.pskMin, first.offer.pskMax)}. В лучшем случае платёж {rub(first.best!.payment)}, переплата по процентам {rub(first.best!.overpayment)}.
         </p>
       )}
+      {today !== null && !first && ranked.length > 0 && (
+        <p className="mt-5 rounded-xl bg-warn-soft px-4 py-3 text-sm text-warn">
+          Актуальных проверенных условий для этого подбора нет. Сверьте ставки на сайтах банков и введите предложение вручную.
+        </p>
+      )}
 
       <div className="mt-4 space-y-3">
         {ranked.map((r) => (
@@ -107,7 +119,7 @@ export function BankMarket({ startDate, onAdd }: { startDate: string; onAdd: (of
                 <h3 className="font-semibold">{r.offer.bank} <span className="font-normal text-muted">· {r.offer.title}</span></h3>
                 <p className="text-sm">Ставка {pctRange(r.offer.rateMin, r.offer.rateMax)} · ПСК {pctRange(r.offer.pskMin, r.offer.pskMax)}</p>
               </div>
-              {r.offer.rateMin !== null ? (
+              {r.offer.rateMin !== null && (today === null || isBankOfferCurrent(r.offer.checkedAt, today)) ? (
                 <button type="button" onClick={() => onAdd(r.offer, amount, termMonths)} className="rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium hover:border-accent">
                   + В сравнение
                 </button>

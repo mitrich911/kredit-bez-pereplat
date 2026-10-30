@@ -1,7 +1,7 @@
 "use client";
 
 import { G } from "@/data/glossary";
-import { useDeferredValue, useMemo, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { prepaymentEffect, type MortgageInput } from "@/lib/finance/mortgage";
 import { optimize, termTable, type Constraints } from "@/lib/finance/optimizer";
 import { adviseMortgage } from "@/lib/finance/advisor";
@@ -14,6 +14,8 @@ import { Advice } from "../Advice";
 import { MortgageCharts, PrepaymentSummary, Summary } from "./Results";
 import { ConstraintsForm, ScenarioTable, TermTable } from "./Optimizer";
 import { BankRateHint } from "../BankMarket";
+import { useBrowserStartDate } from "@/lib/use-browser-start-date";
+import { mortgageShareUrl, readSharedMortgage } from "@/lib/mortgage-share";
 
 interface State {
   price: number;
@@ -31,14 +33,53 @@ interface State {
 }
 
 export function MortgageCalculator({ defaultStart }: { defaultStart: string }) {
-  const [s, setS] = useState<State>({
+  const currentStart = useBrowserStartDate(defaultStart);
+  const [draft, setDraft] = useState<State>({
     price: 7_000_000, down: 1_400_000, rate: 16, years: 20, paymentType: "annuity", accrual: "daily",
     startDate: defaultStart, insurancePercent: 0.5, insuranceFixedYearly: 0, oneTimeCosts: 50_000, monthlyFees: 0, existing: false,
   });
+  const [dateTouched, setDateTouched] = useState(false);
+  const s = dateTouched ? draft : { ...draft, startDate: currentStart };
   const [prepayments, setPrepayments] = useState<Prepayment[]>([]);
   const [limits, setLimits] = useState<Constraints>({ monthlyExtra: 5000, savings: 0, reserve: 0, monthlyIncome: 0 });
   const [debtDate, setDebtDate] = useState("");
-  const set = (patch: Partial<State>) => setS((prev) => ({ ...prev, ...patch }));
+  const [shareUrl, setShareUrl] = useState("");
+  const [shareStatus, setShareStatus] = useState("");
+  const set = (patch: Partial<State>) => {
+    if (patch.startDate !== undefined) setDateTouched(true);
+    setDraft((previous) => ({ ...previous, ...patch }));
+  };
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      if (!new URLSearchParams(window.location.search).has("calc")) return;
+      const shared = readSharedMortgage(window.location.search);
+      if (!shared) {
+        setShareStatus("Ссылка на расчёт повреждена или содержит недопустимые значения.");
+        return;
+      }
+      setDraft(shared.state);
+      setDateTouched(true);
+      setPrepayments(shared.prepayments);
+      setShareStatus("Условия из ссылки загружены.");
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  async function share() {
+    const url = mortgageShareUrl(window.location.href, { version: 1, state: s, prepayments });
+    if (!url) {
+      setShareStatus("Не удалось создать ссылку: проверьте условия или сократите список досрочных платежей.");
+      return;
+    }
+    setShareUrl(url);
+    try {
+      await navigator.clipboard.writeText(url);
+      setShareStatus("Ссылка скопирована. Её можно сохранить или отправить.");
+    } catch {
+      setShareStatus("Скопируйте ссылку из поля ниже.");
+    }
+  }
 
   const deferred = useDeferredValue({ s, prepayments, limits });
   const calc = useMemo(() => {
@@ -100,6 +141,15 @@ export function MortgageCalculator({ defaultStart }: { defaultStart: string }) {
         ) : (
           <>
             <Summary price={s.price} down={s.down} result={calc.effect.base} />
+
+            <div className="rounded-2xl border border-border bg-surface p-4 sm:p-6">
+              <button type="button" onClick={share} className="rounded-xl border border-border px-4 py-2.5 text-sm font-medium hover:border-accent">
+                Сохранить или отправить расчёт
+              </button>
+              <p className="mt-2 text-xs text-muted">Ссылка содержит условия кредита и досрочные платежи. Доход, сбережения и резерв в неё не включены.</p>
+              {shareUrl && <input readOnly aria-label="Ссылка на расчёт" value={shareUrl} onFocus={(event) => event.target.select()} className="mt-3 w-full rounded-lg border border-border bg-bg px-3 py-2 text-sm" />}
+              {shareStatus && <p role="status" className="mt-2 text-sm text-muted">{shareStatus}</p>}
+            </div>
 
             <Card>
               <h2 className="text-lg font-bold">Финансовый разбор</h2>
