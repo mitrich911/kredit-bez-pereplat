@@ -1,0 +1,4 @@
+User-Agent: *
+Disallow: /
+
+Sitemap: https://mitrich911.github.io/kredit-bez-pereplat/sitemap.xml
