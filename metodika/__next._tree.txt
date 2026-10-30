@@ -1,6 +1,6 @@
-:HL["/kredit-bez-pereplat/_next/static/chunks/0slg6tgv333hi.css","style"]
+:HL["/kredit-bez-pereplat/_next/static/chunks/29en4p6zp4q85.css","style"]
 :HL["/kredit-bez-pereplat/_next/static/media/07c7676b89ed2778-s.p.2bn3s6zvc0dyp.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
 :HL["/kredit-bez-pereplat/_next/static/media/76b70a1dbe058eb5-s.p.1y4-pdgsjb-pw.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
 2:[["children",{"s":"__PAGE__","h":160}]]
 1:[["children",{"s":"metodika","h":64,"c":"$Q2"}]]
-0:{"b":"uUSxX7woBzkoEcIXA8Qu8","t":{"t":{"s":"","h":16,"c":"$Q1"}}}
+0:{"b":"f1gEe8TtoZyRfl4Pgx_PS","t":{"t":{"s":"","h":16,"c":"$Q1"}}}
